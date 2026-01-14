@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function fmtDT(val) {
     if (!val) return "-";
@@ -9,18 +9,18 @@ function fmtDT(val) {
 }
 
 export default function AdminPage() {
-    const { token, me, logoutLocal } = useAuth();
+    const nav = useNavigate();
+
+    // ✅ pakai user + logout (bukan me/logoutLocal)
+    const { token, user, logout } = useAuth();
     const [error, setError] = useState("");
 
     const [pending, setPending] = useState([]);
 
-    // approve/reject templates
     const [approveNote, setApproveNote] = useState("Disetujui. Silakan hadir sesuai jadwal.");
     const [meetingLink, setMeetingLink] = useState("https://meet.google.com/");
     const [location, setLocation] = useState("Ruang Konsultasi ANRI");
     const [rejectNote, setRejectNote] = useState("Mohon pilih jadwal lain.");
-
-    // services
     const [services, setServices] = useState([]);
     const [svcName, setSvcName] = useState("");
     const [svcDesc, setSvcDesc] = useState("");
@@ -28,6 +28,12 @@ export default function AdminPage() {
 
     function setErr(e) {
         setError(typeof e === "string" ? e : JSON.stringify(e, null, 2));
+    }
+
+    // ✅ logout yang pasti: hapus token + redirect
+    function doLogout() {
+        logout();
+        nav("/login", { replace: true });
     }
 
     async function loadPending() {
@@ -46,7 +52,7 @@ export default function AdminPage() {
             const data = await api("/admin/services", { token });
             setServices(data);
         } catch (e) {
-            // fallback kalau endpoint admin/services belum ada
+            // fallback ke public endpoint kalau admin/services belum ada
             try {
                 const pub = await api("/services");
                 setServices(pub);
@@ -114,20 +120,18 @@ export default function AdminPage() {
 
     useEffect(() => {
         loadAdminServices();
-        // optional auto-load pending
-        // loadPending();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
         <div style={{ padding: 20, fontFamily: "sans-serif", maxWidth: 1100 }}>
-            <h2>Admin Panel (Opsi B)</h2>
+            <h2>Admin Panel</h2>
 
             <div style={{ marginBottom: 12 }}>
                 <div>
-                    Login sebagai: <b>{me?.name}</b> ({me?.role})
+                    Login sebagai: <b>{user?.name}</b> ({user?.role})
                 </div>
-                <button onClick={logoutLocal}>Logout (local)</button>{" "}
+
+                <button onClick={doLogout}>Logout</button>{" "}
                 <Link to="/user" style={{ marginLeft: 10 }}>
                     Ke User
                 </Link>
@@ -152,7 +156,12 @@ export default function AdminPage() {
                     style={{ width: 420 }}
                 />
                 <label>
-                    <input type="checkbox" checked={svcActive} onChange={(e) => setSvcActive(e.target.checked)} /> Aktif
+                    <input
+                        type="checkbox"
+                        checked={svcActive}
+                        onChange={(e) => setSvcActive(e.target.checked)}
+                    />{" "}
+                    Aktif
                 </label>
                 <button onClick={createService}>Buat Service</button>
                 <button onClick={loadAdminServices}>Reload Services</button>
@@ -163,7 +172,8 @@ export default function AdminPage() {
                 <ul>
                     {services.map((s) => (
                         <li key={s.id}>
-                            #{s.id} — {s.name} ({String(s.is_active) === "1" || s.is_active === true ? "active" : "inactive"})
+                            #{s.id} — {s.name} (
+                            {String(s.is_active) === "1" || s.is_active === true ? "active" : "inactive"})
                         </li>
                     ))}
                 </ul>
@@ -226,7 +236,9 @@ export default function AdminPage() {
                             {pending.map((r) => (
                                 <tr key={r.id}>
                                     <td>{r.id}</td>
-                                    <td>{r.user?.name} ({r.user?.email})</td>
+                                    <td>
+                                        {r.user?.name} ({r.user?.email})
+                                    </td>
                                     <td>{r.service?.name}</td>
                                     <td>{r.mode}</td>
                                     <td>
@@ -235,7 +247,8 @@ export default function AdminPage() {
                                     <td>{r.topic}</td>
                                     <td>{r.institution_name || "-"}</td>
                                     <td>
-                                        {r.pic_name || "-"}<br />
+                                        {r.pic_name || "-"}
+                                        <br />
                                         {r.pic_phone || "-"}
                                     </td>
                                     <td style={{ display: "flex", gap: 8 }}>

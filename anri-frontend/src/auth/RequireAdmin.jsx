@@ -2,12 +2,13 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 export default function RequireAdmin() {
-    const { token, me, loading } = useAuth();
+    const { user, loading } = useAuth();
 
-    if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
-    if (!token) return <Navigate to="/login" replace />;
+    if (loading) return <div style={{ padding: 16 }}>Loading profile...</div>;
 
-    if (me?.role !== "admin") return <Navigate to="/user" replace />;
+    const isAdmin = user?.role === "admin" || user?.is_admin === true;
+    if (!isAdmin) return <Navigate to="/user" replace />;
+
 
     return <Outlet />;
 }

@@ -1,61 +1,84 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 
-const AuthCtx = createContext(null);
+const AuthContext = createContext(null);
+export const useAuth = () => useContext(AuthContext);
 
-export function AuthProvider({ children }) {
-    const [token, setToken] = useState(localStorage.getItem("token") || "");
-    const [me, setMe] = useState(null);
-    const [loading, setLoading] = useState(true);
+export default function AuthProvider({ children }) {
+    const [token, setToken] = useState(() => localStorage.getItem("token") || "");
+    const [user, setUser] = useState(() => {
+        const raw = localStorage.getItem("user");
+        return raw ? JSON.parse(raw) : null;
+    });
+    const [loading, setLoading] = useState(false);
+    useEffect(() => {
+        let alive = true;
 
-    async function loadMe(tk = token) {
-        if (!tk) {
-            setMe(null);
-            return null;
+        async function loadMe() {
+            if (!token) return;
+            setLoading(true);
+            try {
+                const me = await api("/auth/me", { token });
+                if (!alive) return;
+                setUser(me);
+                localStorage.setItem("user", JSON.stringify(me));
+            } catch (e) {
+                if (!alive) return;
+                setToken("");
+                setUser(null);
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+            } finally {
+                if (alive) setLoading(false);
+            }
         }
-        const data = await api("/me", { token: tk });
-        setMe(data);
-        return data;
-    }
+        if (token && !user) loadMe();
+
+        return () => {
+            alive = false;
+        };
+    }, [token]);
 
     async function login(email, password) {
-        const data = await api("/auth/login", {
-            method: "POST",
-            body: { email, password },
-        });
-        const tk = data.token;
-        setToken(tk);
-        localStorage.setItem("token", tk);
-        await loadMe(tk);
-        return tk;
-    }
+        setLoading(true);
+        try {
+            const res = await api("/auth/login", {
+                method: "POST",
+                body: { email, password },
+            });
 
-    function logoutLocal() {
-        setToken("");
-        setMe(null);
-        localStorage.removeItem("token");
-    }
+            const nextToken = res.token || res.access_token;
+            if (!nextToken) throw new Error("Token tidak ditemukan dari response login");
 
-    useEffect(() => {
-        (async () => {
-            try {
-                if (token) await loadMe(token);
-            } catch {
-                logoutLocal();
-            } finally {
-                setLoading(false);
+            setToken(nextToken);
+            localStorage.setItem("token", nextToken);
+
+            if (res.user) {
+                setUser(res.user);
+                localStorage.setItem("user", JSON.stringify(res.user));
+            } else {
+                const me = await api("/auth/me", { token: nextToken });
+                setUser(me);
+                localStorage.setItem("user", JSON.stringify(me));
             }
-        })();
 
-    }, []);
+            return res;
+        } finally {
+            setLoading(false);
+        }
+    }
 
-    return (
-        <AuthCtx.Provider value={{ token, me, loading, login, logoutLocal, loadMe }}>
-            {children}
-        </AuthCtx.Provider>
+    function logout() {
+        setToken("");
+        setUser(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+    }
+
+    const value = useMemo(
+        () => ({ token, user, loading, login, logout }),
+        [token, user, loading]
     );
-}
 
-export function useAuth() {
-    return useContext(AuthCtx);
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

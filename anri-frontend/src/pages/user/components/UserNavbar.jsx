@@ -31,7 +31,7 @@ function initials(name = "") {
 export default function UserHeaderWithSeparateNav({
     me,
     brand = "Reservasi Kegiatan",
-    onLogout, // <- tambahin ini dari parent
+    onLogout,
 }) {
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
@@ -50,8 +50,6 @@ export default function UserHeaderWithSeparateNav({
     );
 
     const HEADER_H = 64;
-
-    // ---- avatar menu state
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
     const handleOpen = (e) => setAnchorEl(e.currentTarget);
@@ -65,7 +63,7 @@ export default function UserHeaderWithSeparateNav({
     const doLogout = () => {
         handleClose();
         if (typeof onLogout === "function") onLogout();
-        else nav("/login"); // fallback kalau belum ada onLogout
+        else nav("/login");
     };
 
     return (
@@ -92,7 +90,6 @@ export default function UserHeaderWithSeparateNav({
                             width: "100%",
                         }}
                     >
-                        {/* BRAND */}
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 180 }}>
                             <Typography sx={{ fontWeight: 950, letterSpacing: 0.2 }}>
                                 {brand}
@@ -100,14 +97,11 @@ export default function UserHeaderWithSeparateNav({
                         </Box>
 
                         <Box sx={{ flex: 1 }} />
-
-                        {/* AVATAR (click -> menu) */}
                         <IconButton onClick={handleOpen} sx={{ p: 0.4 }}>
                             <Avatar sx={{ width: 38, height: 38, fontWeight: 900 }}>
                                 {initials(me?.name)}
                             </Avatar>
                         </IconButton>
-
                         <Menu
                             anchorEl={anchorEl}
                             open={open}
@@ -127,7 +121,6 @@ export default function UserHeaderWithSeparateNav({
                                 },
                             }}
                         >
-                            {/* Header menu */}
                             <Box sx={{ px: 2, pt: 1.6, pb: 1.2 }}>
                                 <Typography fontWeight={950}>{me?.name || "User"}</Typography>
                                 <Typography variant="caption" color="text.secondary">
