@@ -23,7 +23,7 @@ import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded
 import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
 import BlockRoundedIcon from "@mui/icons-material/BlockRounded";
 
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/useAuth";
 import UserNavbar from "./components/UserNavbar";
 import { api } from "../../api/client";
 

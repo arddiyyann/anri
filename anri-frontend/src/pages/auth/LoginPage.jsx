@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/useAuth";
+
 
 import {
     Alert,
@@ -22,21 +23,14 @@ export default function LoginPage() {
     const [error, setError] = useState("");
 
     function pickRedirectTarget(u) {
-        // sesuaikan dengan struktur user kamu:
-        // contoh: u.role === "admin" atau u.is_admin === true
         const isAdmin = u?.role === "admin" || u?.is_admin === true;
         return isAdmin ? "/admin" : "/user";
     }
 
     function normalizeError(err) {
-        // biar enak dibaca saat backend balikin object
         if (!err) return "Terjadi kesalahan.";
         if (typeof err === "string") return err;
-
-        // kalau backend punya format umum: { message: "...", errors: {...} }
         if (err.message && typeof err.message === "string") return err.message;
-
-        // fallback: stringify ringkas
         try {
             return JSON.stringify(err, null, 2);
         } catch {
@@ -50,9 +44,6 @@ export default function LoginPage() {
 
         try {
             await login(email, password);
-
-            // gunakan user terbaru dari localStorage/context
-            // (kalau butuh lebih akurat, AuthContext sudah set user setelah login)
             const raw = localStorage.getItem("user");
             const nextUser = raw ? JSON.parse(raw) : user;
 

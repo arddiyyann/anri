@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/useAuth";
 
 import UserNavbar from "./components/UserNavbar";
 import ServiceSelect from "./components/ServiceSelect";
